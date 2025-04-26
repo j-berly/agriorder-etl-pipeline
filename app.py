@@ -48,13 +48,13 @@ async def upload_inputs(file: UploadFile = File(...), order: UploadFile = File(.
     """
     上传并保存PDF/图片及订单模板Excel，返回临时路径
     - file: 客户上传的PDF或图片
-    - order: 客户上传的标准订单表（一般为Excel）
+    - outputs: 客户上传的标准订单表（一般为Excel）
     """
     if not allowed_content_type(file.content_type):
         raise HTTPException(status_code=400, detail="僅支持PDF、图片格式文件上传！")
     file_path = await save_file_to_tmp(file)
     order_path = await save_file_to_tmp(order)
-    return {"file": file_path, "order": order_path}
+    return {"file": file_path, "outputs": order_path}
 
 
 @app.post("/pdf_extract")

@@ -1,0 +1,847 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/pdf_transform",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filepath",
+              "value": "={{ $json.extract_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7c22d0d8-d639-4e75-a176-eda4fae30483",
+      "name": "Transform Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\n// 安全判断\nconst filepath = $json.file;\n\nif (filepath.includes('pdf') || filepath.includes('jpg') || filepath.includes('png') || filepath.includes('jpeg')) {\n  $json.mode = filepath.includes('pdf') ? 'pdf' : 'img';\n} else {\n  $json.mode = 'unknown';\n}\nreturn $json;"
+      },
+      "id": "6617a626-a210-41f4-ab27-66b57b1f0e89",
+      "name": "File Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/pdf_extract",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filepath",
+              "value": "={{ $json.file }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cca88b3e-c6db-4ea4-837f-9e3de8f8f8ae",
+      "name": "Extract PDF via OCR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/fuzzy",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orderpath",
+              "value": "={{ $('File Switch').item.json.order }}"
+            },
+            {
+              "name": "filepath",
+              "value": "={{ $json.transform_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a2f7ae4-89e6-4f84-b87c-fa32d0d207cc",
+      "name": "Fuzzy Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1420,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/img_transform",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filepath",
+              "value": "={{ $json.tmp_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f521c99d-71b1-46ab-b34c-a7a26ff02d99",
+      "name": "Transform Text1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "order",
+              "inputDataFieldName": "order"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3fec5e5b-3898-4586-9556-b73fcfe8dd4e",
+      "name": "Upload Files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "subject": "={{ $json.low_score_items }}",
+        "options": {}
+      },
+      "id": "1c93c4c7-4c2b-45c5-8a70-4adef6058580",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2320,
+        -40
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "id": "25d6b4e6-34bf-432d-9887-b853ffb5df34",
+      "name": "Convert to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2320,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=low_score_items",
+        "options": {}
+      },
+      "id": "801f67c4-41a3-466e-8553-8470627ff72a",
+      "name": "Notify",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=matched_items",
+        "options": {}
+      },
+      "id": "e9ad7c8d-cd07-4f2d-bfdb-0d80ac33552f",
+      "name": "Save to Disk",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const threshold = 0.6;\nconst lowScoreItems = $json.items\n  .map((item, idx) => ({ ...item, idx })) // 附加索引\n  .filter(item => item.match_score <= threshold);\n\nconst matchedItems = $json.items\n  .map((item, idx) => ({ ...item, idx })) // 附加索引\n  .filter(item => item.match_score > threshold);\nreturn {\n  json: {\n    low_score_items: lowScoreItems,\n    matched_items: matchedItems\n  }\n};\n"
+      },
+      "id": "17484e21-039b-4a55-b1d8-0eeea0bd0505",
+      "name": "Code1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const threshold = 0.6;\nconst lowScoreItems = $json.items\n  .map((item, idx) => ({ ...item, idx })) // 附加索引\n  .filter(item => item.match_score <= threshold);\n\nconst matchedItems = $json.items\n  .map((item, idx) => ({ ...item, idx })) // 附加索引\n  .filter(item => item.match_score > threshold);\nreturn {\n  json: {\n    low_score_items: lowScoreItems,\n    matched_items: matchedItems\n  }\n};\n"
+      },
+      "id": "9c50b09e-fb54-44f3-b813-c67ce2d6fc94",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/load",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filepath",
+              "value": "={{ $('Transform Text').item.json.transform_path }}"
+            },
+            {
+              "name": "matchpath",
+              "value": "={{ $json.fuzzy_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8f74720d-d002-441f-a262-d154af546e1f",
+      "name": "Load to Json",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1640,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=low_score_items",
+        "options": {}
+      },
+      "id": "1124b05a-9aab-4f96-90e4-5b76b52b2f93",
+      "name": "Notify1",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "=matched_items",
+        "options": {}
+      },
+      "id": "b6d98e88-5932-46f9-8a8b-60ab8cc1e52c",
+      "name": "Save to Disk1",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "subject": "={{ $json.low_score_items }}",
+        "options": {}
+      },
+      "id": "c911efb6-4388-43d6-a7c7-98843f3a8b13",
+      "name": "Send Email1",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2320,
+        360
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "id": "7e6a2b65-7245-4014-8229-45d99c0a3c42",
+      "name": "Convert to File1",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2320,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "39d47d32-a505-486e-b43a-d32fe2bebbfa",
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "img",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "15ac1434-37d6-46bb-903a-ca5696fa09e4",
+      "name": "File Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/img_extract",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filepath",
+              "value": "={{ $json.file }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b74ae7b1-74f8-4a7d-a12b-6ff357c6a025",
+      "name": "Extract IMG via OCR1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/fuzzy",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orderpath",
+              "value": "={{ $('File Switch').item.json.order }}"
+            },
+            {
+              "name": "filepath",
+              "value": "={{ $json.transform_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "30dfafe5-8911-4aee-8472-4d7e280c2365",
+      "name": "Fuzzy Text1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1420,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:11000/load",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "filepath",
+              "value": "={{ $('Transform Text1').item.json.transform_path }}"
+            },
+            {
+              "name": "matchpath",
+              "value": "={{ $json.fuzzy_path }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8701c93b-885e-4fa0-8536-2ca020139280",
+      "name": "Load to Json1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1640,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload",
+        "options": {}
+      },
+      "id": "5ac382e9-02c7-4ebe-bef7-0e2d79412b14",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        120,
+        220
+      ],
+      "webhookId": "e5c22274-1e1a-4158-a268-4ff366086e29"
+    },
+    {
+      "parameters": {
+        "content": "上传两个文档，之后会上传到服务器的tmp文件夹\n1.需要解析的文档\n2.客户订单资料",
+        "height": 104.92129090798606,
+        "width": 192.22774292742082
+      },
+      "id": "17a6f1ce-08f6-4d0e-bf7d-5d50330d3617",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        180,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "content": "仅支持图片/pdf，其余类型不会进入后面处理。",
+        "height": 104.92129090798606,
+        "width": 192.22774292742082
+      },
+      "id": "ef6474d9-a598-4817-993b-5b2bfde2552c",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        520,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "content": "ETL管线\nExtract：Paddle OCR提取\nTransform：\n·使用规则规范表头\n·使用llm分析缺失值、分析每个item是否错位、纠正错别字。\n·fuzzy计算匹配度\nLoad：转json，低于60分通知客户\n每个入参的文件不存在，返回400:不存在文件！",
+        "height": 195.43159868910857,
+        "width": 325.83355251745724
+      },
+      "id": "430ab661-c03d-46a3-93e7-960b7e648dfd",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "content": "PDF的ETL管线",
+        "height": 80,
+        "width": 150
+      },
+      "id": "cb0b7ee8-f0b0-4a1d-8390-9ad26a0c5b18",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        780,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "IMAGE的ETL管线",
+        "height": 80,
+        "width": 150
+      },
+      "id": "54a09a6a-c2f3-4fd9-9a65-f208f919716e",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        820,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "content": "分为两类：\n·低于60分的，发送邮件\n·高于60分的，存到本地",
+        "height": 80,
+        "width": 180.46580505314438
+      },
+      "id": "2c93f349-aa6f-47e7-b63a-51860d2da8e2",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "content": "若收到文档不属于pdf或图片类，返回400：僅支持PDF、图片格式文件上传！",
+        "height": 80,
+        "width": 209.4520794907304
+      },
+      "id": "c1b6989c-6db0-4d0c-8cbd-e9bc03797f02",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        260,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "File Type": {
+      "main": [
+        [
+          {
+            "node": "File Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF via OCR": {
+      "main": [
+        [
+          {
+            "node": "Transform Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Text": {
+      "main": [
+        [
+          {
+            "node": "Fuzzy Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Text1": {
+      "main": [
+        [
+          {
+            "node": "Fuzzy Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Files": {
+      "main": [
+        [
+          {
+            "node": "File Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fuzzy Text": {
+      "main": [
+        [
+          {
+            "node": "Load to Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Disk": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Notify",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save to Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load to Json": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Notify1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save to Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify1": {
+      "main": [
+        [
+          {
+            "node": "Send Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Disk1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF via OCR",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract IMG via OCR1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract IMG via OCR1": {
+      "main": [
+        [
+          {
+            "node": "Transform Text1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fuzzy Text1": {
+      "main": [
+        [
+          {
+            "node": "Load to Json1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load to Json1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Upload Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7b925f6c-d42d-49a8-88f4-34ce08320661",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "796fcd560329fa1080515b771fe5daf749ba928446fcac42104f8791ecf6a653"
+  },
+  "id": "NkgvZgQk44bW3YH3",
+  "tags": []
+}

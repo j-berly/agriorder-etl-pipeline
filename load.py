@@ -1,5 +1,4 @@
 import pickle
-import json
 
 
 def read_pkl(filename):
